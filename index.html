@@ -51,11 +51,42 @@
     transition:color .9s ease;}
   #count b{font-weight:500;color:rgba(255,215,235,.62);}
 
-  #sound{position:fixed;z-index:5;left:14px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
+  .sbtn{position:fixed;z-index:5;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
     width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.15);
-    background:rgba(255,255,255,.05);color:rgba(255,255,255,.5);font-size:14px;line-height:32px;
-    text-align:center;cursor:pointer;pointer-events:auto;backdrop-filter:blur(6px);}
-  #sound.off{opacity:.35;text-decoration:line-through;}
+    background:rgba(255,255,255,.05);color:rgba(255,255,255,.55);font-size:14px;line-height:32px;
+    text-align:center;cursor:pointer;pointer-events:auto;backdrop-filter:blur(6px);
+    transition:opacity .3s,color .3s,border-color .3s;}
+  .sbtn.off{opacity:.32;text-decoration:line-through;}
+  .sbtn.on{color:rgba(255,225,240,.92);border-color:rgba(255,190,215,.42);
+    box-shadow:0 0 14px rgba(255,120,170,.28);}
+  #music{left:14px;font-size:15px;}
+  #sound{left:58px;}
+  @keyframes spinNote{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+  #music.on{animation:spinNote 2.2s ease-in-out infinite;}
+
+  /* 曲目选择器 */
+  #track{position:fixed;z-index:5;left:102px;bottom:calc(env(safe-area-inset-bottom,0px) + 14px);
+    height:34px;line-height:32px;padding:0 11px 0 12px;border-radius:17px;
+    border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.05);
+    color:rgba(255,255,255,.55);font-size:11px;letter-spacing:.4px;
+    cursor:pointer;pointer-events:auto;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+    white-space:nowrap;max-width:calc(100vw - 124px);overflow:hidden;text-overflow:ellipsis;
+    transition:color .35s,border-color .35s,background .35s;}
+  #track .arw{margin-left:6px;font-size:9px;opacity:.6;}
+  #track.on{color:rgba(255,228,242,.92);border-color:rgba(255,190,215,.40);
+    background:rgba(255,150,190,.10);}
+  #trackMenu{position:fixed;z-index:6;left:102px;bottom:calc(env(safe-area-inset-bottom,0px) + 56px);
+    min-width:176px;max-width:calc(100vw - 40px);padding:6px;border-radius:15px;
+    background:rgba(18,10,24,.86);border:1px solid rgba(255,255,255,.13);
+    backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+    box-shadow:0 12px 34px rgba(0,0,0,.5);display:none;}
+  #trackMenu.show{display:block;animation:menuIn .28s cubic-bezier(.16,1,.3,1);}
+  @keyframes menuIn{from{opacity:0;transform:translateY(10px) scale(.97)}to{opacity:1;transform:none}}
+  .titem{padding:10px 12px;border-radius:10px;font-size:12.5px;color:rgba(255,255,255,.72);
+    letter-spacing:.5px;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .titem:active{background:rgba(255,255,255,.10);}
+  .titem.sel{color:#ffdfe9;background:rgba(255,120,170,.18);}
+  .titem .sub{font-size:10px;color:rgba(255,255,255,.34);margin-left:6px;}
 
   /* 彩蛋金光 */
   @keyframes goldPulse{0%,100%{filter:drop-shadow(0 0 12px rgba(255,205,110,.5))}
@@ -84,7 +115,12 @@
   <div id="count">已收到 0 份</div>
 </div>
 
-<div id="sound">♪</div>
+<!-- 背景音乐：music1.mp3 / music2.mp3 / music3.mp3 与 index.html 放同一目录；没有也能用内置音乐盒 -->
+<audio id="bgm" loop preload="auto"></audio>
+<div id="music" class="sbtn">♫</div>
+<div id="sound" class="sbtn on">♪</div>
+<div id="track">音乐盒 · 玫瑰粉<span class="arw">▾</span></div>
+<div id="trackMenu"></div>
 
 <script>
 (function () {
@@ -98,6 +134,8 @@
   var countEl = document.getElementById('count');
   var hintEl = document.getElementById('hint');
   var soundBtn = document.getElementById('sound');
+  var musicBtn = document.getElementById('music');
+  var bgmEl = document.getElementById('bgm');
   var eyebrow = document.querySelector('#top .eyebrow');
   var nameEl = document.querySelector('#top .name');
 
@@ -107,42 +145,66 @@
       core:[130,12,50,0.36], core2:[74,6,32,0.15],
       hues:[330,338,344,350,355,0,8,42], sat:100, lit:70,
       heartA:'#ff9fbb', heartB:'#e0103f', star:[255,226,234], dust:[255,199,216],
-      glow:'255,60,120', name2:'#ffb3c8', wish:'#fff5f8' },
+      glow:'255,60,120', name2:'#ffb3c8', wish:'#fff5f8',
+      mu:{arp:[0,2,1,3,2,1,3,2],wave:'sine',tempo:520,
+          prog:[[220,[220,261.63,329.63,440]],[174.61,[174.61,220,261.63,349.23]],
+                [261.63,[261.63,329.63,392,523.25]],[196,[196,246.94,293.66,392]]]} },
     { name:'莫兰迪紫', bg:[24,19,32], trail:0.28,
       core:[104,76,132,0.34], core2:[58,42,76,0.15],
       hues:[275,282,290,300,268,258,315,42], sat:44, lit:70,
       heartA:'#cbb6de', heartB:'#7a5c96', star:[232,224,244], dust:[210,196,228],
-      glow:'178,132,224', name2:'#c9b0e0', wish:'#f8f4ff' },
+      glow:'178,132,224', name2:'#c9b0e0', wish:'#f8f4ff',
+      mu:{arp:[0,2,1,3,2,1,3,2],wave:'sine',tempo:640,
+          prog:[[146.83,[146.83,174.61,220,293.66]],[233.08,[233.08,293.66,349.23,466.16]],
+                [174.61,[174.61,220,261.63,349.23]],[261.63,[261.63,329.63,392,523.25]]]} },
     { name:'雾霾蓝', bg:[15,23,33], trail:0.28,
       core:[46,88,126,0.34], core2:[26,52,74,0.15],
       hues:[200,206,213,195,220,190,185,45], sat:42, lit:68,
       heartA:'#a9c8de', heartB:'#4a7fa5', star:[222,236,246], dust:[192,212,228],
-      glow:'110,170,220', name2:'#a8c8e2', wish:'#f2f8ff' },
+      glow:'110,170,220', name2:'#a8c8e2', wish:'#f2f8ff',
+      mu:{arp:[0,2,1,3,2,1,3,2],wave:'sine',tempo:580,
+          prog:[[164.81,[329.63,392,493.88,659.25]],[261.63,[523.25,659.25,783.99,1046.5]],
+                [196,[392,493.88,587.33,783.99]],[146.83,[293.66,369.99,440,587.33]]]} },
     { name:'暖金橙', bg:[27,13,5], trail:0.30,
       core:[152,82,14,0.34], core2:[86,44,6,0.15],
       hues:[35,42,28,50,20,12,340,55], sat:94, lit:66,
       heartA:'#ffcf8a', heartB:'#d46b12', star:[255,240,214], dust:[255,222,170],
-      glow:'255,175,70', name2:'#ffcb8a', wish:'#fff8ec' },
+      glow:'255,175,70', name2:'#ffcb8a', wish:'#fff8ec',
+      mu:{arp:[0,2,1,3,2,1,3,2],wave:'triangle',tempo:460,
+          prog:[[261.63,[261.63,329.63,392,523.25]],[196,[196,246.94,293.66,392]],
+                [220,[220,261.63,329.63,440]],[174.61,[174.61,220,261.63,349.23]]]} },
     { name:'薄雾青', bg:[9,27,27], trail:0.28,
       core:[22,116,104,0.32], core2:[12,66,60,0.15],
       hues:[165,172,180,155,190,148,140,45], sat:46, lit:68,
       heartA:'#a8ded2', heartB:'#2f9184', star:[220,246,240], dust:[188,226,216],
-      glow:'90,215,190', name2:'#a4ded0', wish:'#f0fffb' },
+      glow:'90,215,190', name2:'#a4ded0', wish:'#f0fffb',
+      mu:{arp:[0,2,1,3,2,1,3,2],wave:'sine',tempo:660,
+          prog:[[174.61,[174.61,220,261.63,349.23]],[261.63,[261.63,329.63,392,523.25]],
+                [293.66,[293.66,349.23,440,587.33]],[233.08,[233.08,293.66,349.23,466.16]]]} },
     { name:'藕荷粉紫', bg:[26,15,28], trail:0.29,
       core:[126,62,126,0.32], core2:[70,32,70,0.15],
       hues:[320,330,310,300,340,285,350,45], sat:56, lit:73,
       heartA:'#e6bcd8', heartB:'#a05296', star:[248,228,242], dust:[232,204,226],
-      glow:'226,120,200', name2:'#e8bcda', wish:'#fff4fb' },
+      glow:'226,120,200', name2:'#e8bcda', wish:'#fff4fb',
+      mu:{arp:[0,2,1,3,2,1,3,2],wave:'sine',tempo:500,
+          prog:[[220,[220,261.63,329.63,440]],[164.81,[164.81,196,246.94,329.63]],
+                [174.61,[174.61,220,261.63,349.23]],[261.63,[261.63,329.63,392,523.25]]]} },
     { name:'星空靛蓝', bg:[7,11,32], trail:0.27,
       core:[46,58,158,0.34], core2:[24,30,86,0.15],
       hues:[230,240,225,215,250,262,205,45], sat:72, lit:68,
       heartA:'#b3c0ff', heartB:'#3a44b8', star:[226,232,255], dust:[196,206,248],
-      glow:'126,140,255', name2:'#b6c2ff', wish:'#f4f6ff' },
+      glow:'126,140,255', name2:'#b6c2ff', wish:'#f4f6ff',
+      mu:{arp:[0,2,1,3,2,1,3,2],wave:'triangle',tempo:700,
+          prog:[[123.47,[246.94,293.66,369.99,493.88]],[196,[196,246.94,293.66,392]],
+                [146.83,[146.83,220,293.66,369.99]],[220,[220,277.18,329.63,440]]]} },
     { name:'蜜桃珊瑚', bg:[29,13,13], trail:0.30,
       core:[164,64,52,0.32], core2:[92,32,26,0.15],
       hues:[10,18,5,25,350,0,32,45], sat:80, lit:71,
       heartA:'#ffbfae', heartB:'#d4503a', star:[255,232,224], dust:[255,208,196],
-      glow:'255,130,105', name2:'#ffb8a6', wish:'#fff6f3' }
+      glow:'255,130,105', name2:'#ffb8a6', wish:'#fff6f3',
+      mu:{arp:[0,2,1,3,2,1,3,2],wave:'triangle',tempo:440,
+          prog:[[196,[392,493.88,587.33,783.99]],[146.83,[293.66,369.99,440,587.33]],
+                [164.81,[329.63,392,493.88,659.25]],[261.63,[261.63,329.63,392,523.25]]]} }
   ];
   var ti = 0, tj = 0, tr = 1;          // 当前主题 / 上一个主题 / 过渡进度
   var CUR = { bg:[12,2,20], core:[130,12,50,0.36], core2:[74,6,32,0.15],
@@ -322,7 +384,197 @@
       });
     } catch (e) {}
   }
-  soundBtn.addEventListener('click', function (e) { e.stopPropagation(); muted = !muted; soundBtn.classList.toggle('off', muted); });
+  soundBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    muted = !muted;
+    soundBtn.classList.toggle('off', muted);
+    soundBtn.classList.toggle('on', !muted);
+  });
+
+  /* ===================== 背景音乐 =====================
+     · 淡入：每次开启 / 换曲，音量都从 0 平滑升到目标值
+     · 选曲：内置"音乐盒"随色系变调，也可放 music1/2/3.mp3
+     · 联动：8 套色系各有专属和弦进行、音色与速度
+     ================================================== */
+  var BGM_VOL = 0.30;
+  var bgmOn = false, bgmWanted = true, useSynth = false;
+  var synthTimer = null, stepN = 0, synthVolMul = 1;
+  var curVol = 0, fadeTimer = null, fallbackTimer = null;
+
+  var MUSIC = [
+    { name: '音乐盒', src: null, synth: true },
+    { name: '曲目一', src: 'music1.mp3' },
+    { name: '曲目二', src: 'music2.mp3' },
+    { name: '曲目三', src: 'music3.mp3' }
+  ];
+  var curTrack = 0;
+  var trackBtn = document.getElementById('track');
+  var trackMenu = document.getElementById('trackMenu');
+
+  /* ---------- 音量渐变 ---------- */
+  function applyVol(v) {
+    curVol = Math.max(0, Math.min(1, v));
+    if (useSynth) synthVolMul = curVol;
+    else { try { bgmEl.volume = curVol * BGM_VOL; } catch (e) {} }
+  }
+  function fade(from, to, dur, cb) {
+    if (fadeTimer) { clearInterval(fadeTimer); fadeTimer = null; }
+    var t0 = performance.now();
+    applyVol(from);
+    fadeTimer = setInterval(function () {
+      var k = Math.min(1, (performance.now() - t0) / dur);
+      var e = 1 - Math.pow(1 - k, 2);                   // easeOutQuad：起步柔和，全程匀升
+      applyVol(from + (to - from) * e);
+      if (k >= 1) { clearInterval(fadeTimer); fadeTimer = null; if (cb) cb(); }
+    }, 40);
+  }
+
+  /* ---------- 音乐盒：实时读取当前色系的和弦配置 ---------- */
+  function curMu() { return (THEMES[ti] && THEMES[ti].mu) || THEMES[0].mu; }
+  function synthNote(f, vol, dur, wave) {
+    if (!ac) return;
+    var t = ac.currentTime, v = Math.max(0.0002, vol * synthVolMul);
+    var o = ac.createOscillator(), g = ac.createGain();
+    o.type = wave || 'sine'; o.frequency.value = f;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(v, t + 0.05);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(ac.destination);
+    o.start(t); o.stop(t + dur + 0.05);
+    var o2 = ac.createOscillator(), g2 = ac.createGain();   // 八度泛音，音色更亮
+    o2.type = 'sine'; o2.frequency.value = f * 2;
+    g2.gain.setValueAtTime(0.0001, t);
+    g2.gain.exponentialRampToValueAtTime(v * 0.22, t + 0.05);
+    g2.gain.exponentialRampToValueAtTime(0.0001, t + dur * 0.6);
+    o2.connect(g2); g2.connect(ac.destination);
+    o2.start(t); o2.stop(t + dur);
+  }
+  function startSynth() {
+    if (synthTimer) return;
+    try {
+      if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+    } catch (e) { return; }
+    var mu0 = curMu();
+    synthTimer = setInterval(function () {
+      var m = curMu();                                   // 每步重读 → 换色系即换和弦
+      var ch = m.prog[Math.floor(stepN / 8) % m.prog.length];
+      if (stepN % 8 === 0) synthNote(ch[0] / 2, 0.048, 3.0, 'sine');        // 低音铺底
+      synthNote(ch[1][m.arp[stepN % 8]], 0.066, 1.7, m.wave);               // 主旋律
+      if (stepN % 4 === 2) synthNote(ch[1][m.arp[stepN % 8]] * 2, 0.020, 1.1, 'sine');
+      stepN++;
+    }, mu0.tempo);
+  }
+  function restartSynthTimer() {              // 色系变了 → 用新 tempo 重启节拍
+    if (!synthTimer) return;
+    clearInterval(synthTimer); synthTimer = null;
+    startSynth();
+  }
+  function stopSynth() { if (synthTimer) { clearInterval(synthTimer); synthTimer = null; } }
+
+  /* ---------- 播放 / 停止 ---------- */
+  function fallbackToSynth() {
+    if (MUSIC[curTrack].synth) return;
+    useSynth = true;
+    try { bgmEl.pause(); } catch (e) {}
+    curTrack = 0;                                        // 文件没找到 → 回到音乐盒
+    renderMenu(); updateTrackLabel();
+    if (bgmOn) { startSynth(); fade(0, 1, 1200); }
+  }
+  function loadAndPlay() {
+    var tr = MUSIC[curTrack];
+    applyVol(0);
+    if (tr.synth) {
+      useSynth = true;
+      try { bgmEl.pause(); } catch (e) {}
+      startSynth();
+      return;
+    }
+    useSynth = false; stopSynth();
+    try {
+      bgmEl.src = tr.src; bgmEl.load();
+      bgmEl.volume = 0;
+      var pr = bgmEl.play();
+      if (pr && pr.then) pr.then(function () {}).catch(function () { fallbackToSynth(); });
+    } catch (e) { fallbackToSynth(); }
+    if (fallbackTimer) clearTimeout(fallbackTimer);
+    fallbackTimer = setTimeout(function () {             // 4 秒还没出声 → 回退音乐盒
+      if (bgmOn && !useSynth && (bgmEl.paused || bgmEl.readyState === 0)) fallbackToSynth();
+    }, 4000);
+  }
+  function startBgm() {
+    if (bgmOn) return;
+    bgmOn = true;
+    musicBtn.classList.add('on'); musicBtn.classList.remove('off');
+    trackBtn.classList.add('on');
+    try {
+      if (!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+    } catch (e) {}
+    loadAndPlay();
+    fade(0, 1, 2000);                                    // ★ 2 秒淡入
+  }
+  function stopBgm() {
+    bgmOn = false;
+    musicBtn.classList.remove('on'); musicBtn.classList.add('off');
+    trackBtn.classList.remove('on');
+    if (fallbackTimer) { clearTimeout(fallbackTimer); fallbackTimer = null; }
+    var wasSynth = useSynth;
+    fade(curVol, 0, 420, function () {
+      try { bgmEl.pause(); } catch (e) {}
+      if (wasSynth) stopSynth();
+      applyVol(0);
+    });
+  }
+  bgmEl.addEventListener('error', function () { if (bgmOn && !useSynth) fallbackToSynth(); });
+
+  /* ---------- 曲目选择器 ---------- */
+  function trackLabel(i) {
+    return MUSIC[i].synth ? ('音乐盒 · ' + THEMES[ti].name) : MUSIC[i].name;
+  }
+  function updateTrackLabel() {
+    trackBtn.innerHTML = trackLabel(curTrack) + '<span class="arw">▾</span>';
+  }
+  function renderMenu() {
+    var h = '';
+    for (var i = 0; i < MUSIC.length; i++) {
+      h += '<div class="titem' + (i === curTrack ? ' sel' : '') + '" data-i="' + i + '">'
+         + trackLabel(i) + '<span class="sub">'
+         + (MUSIC[i].synth ? '随色系变调' : '需自备文件') + '</span></div>';
+    }
+    trackMenu.innerHTML = h;
+  }
+  trackBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    renderMenu();
+    trackMenu.classList.toggle('show');
+  });
+  trackMenu.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var it = e.target.closest ? e.target.closest('.titem') : null;
+    if (!it) return;
+    var i = parseInt(it.getAttribute('data-i'), 10);
+    trackMenu.classList.remove('show');
+    if (i === curTrack) return;
+    curTrack = i;
+    updateTrackLabel();
+    if (!bgmOn) return;                                  // 没在播 → 只记录选择
+    fade(curVol, 0, 380, function () {                   // ★ 换曲：淡出→切换→淡入
+      loadAndPlay();
+      fade(0, 1, 2000);
+    });
+  });
+
+  document.addEventListener('pointerdown', function (e) {   // 点空白处收起菜单
+    if (e.target !== trackBtn && !trackMenu.contains(e.target)) trackMenu.classList.remove('show');
+  });
+
+  musicBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    bgmWanted = !bgmWanted;
+    if (bgmWanted) startBgm(); else stopBgm();
+  });
+  renderMenu(); updateTrackLabel();
 
   /* ===================== 心形轮廓 ===================== */
   var OUTLINE = [];
@@ -478,11 +730,14 @@
   function nextTheme() {
     tj = ti; ti = (ti + 1) % THEMES.length; tr = 0;
     applyThemeUI(THEMES[ti]);
+    if (bgmOn && useSynth) restartSynthTimer();     // 换色系 → 换和弦与速度
+    updateTrackLabel();                              // 曲名里的色系名同步
   }
 
   var pressTimer = null;
   function down(e) {
     var x = e.clientX, y = e.clientY;
+    if (bgmWanted && !bgmOn) startBgm();      // 首次触碰时启动背景音乐（满足浏览器手势要求）
     spawnBurst(x, y, false);
     pushParts(x, y, 2.6);
     nextTheme();
@@ -504,7 +759,11 @@
   }
   function up() { if (pressTimer) { clearTimeout(pressTimer); pressTimer = null; } }
 
-  window.addEventListener('pointerdown', function (e) { if (e.target !== soundBtn) down(e); });
+  window.addEventListener('pointerdown', function (e) {
+    if (e.target === soundBtn || e.target === musicBtn) return;
+    if (e.target === trackBtn || trackMenu.contains(e.target)) return;
+    down(e);
+  });
   window.addEventListener('pointerup', up);
   window.addEventListener('pointercancel', up);
   window.addEventListener('pointermove', function (e) { pushParts(e.clientX, e.clientY, 0.55); }, { passive: true });
